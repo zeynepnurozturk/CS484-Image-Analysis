@@ -1,0 +1,103 @@
+import numpy as np
+import cv2
+import sys
+#import matplotlib.pyplot as plt
+#import matplotlib.cm as cm
+#from matplotlib import pyplot as plt
+#import matplotlib.pyplot as plt
+
+import scipy.misc
+from PIL import Image
+class art1:
+#path of the image
+path = r'image.png'
+
+#convert gray during input
+img = cv2.imread( path,0)
+
+#resize
+size = 512
+resized = cv2.resize(img, (size, size), cv2.INTER_LINEAR)
+
+# thresholding
+ret, bw_img = cv2.threshold(resized,127,255,cv2.THRESH_BINARY_INV)
+
+#convert to 1 0's
+#https://stackoverflow.com/questions/45351402/convert-an-image-array-to-a-binarized-image
+threshold = 0.2
+new_indice = np.where(bw_img/255>=threshold, 1, 0)
+
+#print (new_indice)
+
+cv2.imshow("Binary Image",bw_img)
+###########################################333
+# 			DILATION
+#############################################3
+def dilation( source_image, struct_el, originRow, originCol):
+	#number of rows and columns of the struct_el
+	numrows = len(struct_el)    
+	numcols = len(struct_el[0])  
+	#result array for image
+	resultImage = np.zeros((size,size))
+	#resultImage = np.logical_not(resultImage).astype(int)
+	#trace all the pixels
+	for i in range (size):
+		for j in range (size):
+			if( source_image[i][j] == 1) : # if seas black pixel
+				if( (i> originRow and j> originCol and i< size-originRow and j <size-originCol)): #check boundaries
+					orShape = np.bitwise_or(source_image[ (i-originRow):(i+numrows-originRow), (j-originCol):(j+numcols-originCol) ], struct_el) #anding the pixels 
+					for x in range(numrows):
+						for y in range( numcols):
+							resultImage[i-originRow+x][j-originCol+y] = orShape[x][y]# changing the pixels
+	#change pixel to create binary image
+	for i in range (size):
+		for j in range (size):
+		
+			if( resultImage[i][j] == 1) :
+				 resultImage[i][j] = 255
+	#cv2.imshow("Binary Image2",source_image)
+	#from array to binary
+	img2 = Image.fromarray(resultImage.astype('uint8'))
+	img2.save('dilation.png')
+	img2.show()
+	return img2
+###########################################################3
+#				EROSION
+###########################################################3333
+def erosion( source_image, struct_el, originRow, originCol):
+	#most part are same as dilation but only not and operator or operator
+	numrows = len(struct_el)   
+	numcols = len(struct_el[0]) 
+	resultImage2 = np.zeros((size,size))
+	#resultImage2 = np.logical_not(resultImage2).astype(int)
+	for i in range (size):
+		for j in range (size):
+			if( source_image[i][j] == 1) :
+				if( (i> originRow and j> originCol and i< size-originRow and j <size-originCol)):
+					orShape = np.bitwise_and(source_image[ (i-originRow):(i+numrows-originRow), (j-originCol):(j+numcols-originCol) ], struct_el)
+					if( np.array_equal( orShape , struct_el)):
+						resultImage2[i][j] = 1# changing the pixels
+
+	for i in range (size):
+		for j in range (size):
+			if( resultImage2[i][j] == 1) :
+				 resultImage2[i][j] = 255
+	#cv2.imshow("Binary Image2",source_image)
+	
+	img3 = Image.fromarray(resultImage2.astype('uint8'))
+	img3.save('erosion.png')
+	img3.show()
+	return img3
+
+#struct_element  = [ [0, 0, 0], [0, 0, 0], [0, 0, 0]]
+struct_element = [[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1]]
+
+originrow = 2
+origincol = 2
+dilation(new_indice, struct_element, originrow, origincol)
+erosion(new_indice, struct_element, originrow, origincol)
+
+
+
+cv2.waitKey(0)
+cv2.destroyAllWindows()
